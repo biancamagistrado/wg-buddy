@@ -1,0 +1,106 @@
+// WG Buddy data model.
+//
+// A Household is the top-level container. Everything else belongs to exactly
+// one household, which is what makes the data "shared" between members.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Household {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  members Member[]
+  items   ShoppingItem[]
+  tasks   Task[]
+}
+
+/// A person living in the household. No password yet - authentication is a
+/// later milestone. For now you simply pick who you are.
+model Member {
+  id     String @id @default(cuid())
+  name   String
+  /// Hex colour used as the avatar background when there is no photo.
+  color  String @default("#6366f1")
+
+  /// Optional profile photo, stored as a small JPEG data URL.
+  /// The browser crops and shrinks it to 256x256 before uploading, so this
+  /// stays around 10-20 kB. See docs/ARCHITECTURE.md for why it lives in the
+  /// database rather than on disk.
+  avatarUrl String? @db.Text
+
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  addedItems    ShoppingItem[] @relation("ItemAddedBy")
+  assignedTasks Task[]         @relation("TaskAssignee")
+
+  createdAt DateTime @default(now())
+
+  @@index([householdId])
+}
+
+model ShoppingItem {
+  id       String   @id @default(cuid())
+  name     String
+  /// Free text so "2" and "500g" both work.
+  quantity String?
+  category Category @default(OTHER)
+  done     Boolean  @default(false)
+
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  /// Optional: the item survives if the member who added it is removed.
+  addedById String?
+  addedBy   Member? @relation("ItemAddedBy", fields: [addedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([householdId, done])
+}
+
+model Task {
+  id      String     @id @default(cuid())
+  title   String
+  notes   String?
+  status  TaskStatus @default(TODO)
+  dueDate DateTime?
+
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  assigneeId String?
+  assignee   Member? @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([householdId, status])
+  @@index([householdId, dueDate])
+}
+
+enum Category {
+  PRODUCE
+  DAIRY
+  BAKERY
+  MEAT
+  FROZEN
+  DRINKS
+  HOUSEHOLD
+  OTHER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}

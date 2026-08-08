@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: wgbuddy-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wgbuddy
+      POSTGRES_PASSWORD: wgbuddy
+      POSTGRES_DB: wgbuddy
+    ports:
+      - "5432:5432"
+    volumes:
+      - wgbuddy-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wgbuddy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  wgbuddy-data:
