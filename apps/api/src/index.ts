@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import cors from "cors";
 import express from "express";
+import { seedDemoData } from "./demoData.js";
 import { errorHandler } from "./http.js";
 import { householdsRouter } from "./routes/households.js";
 import { itemsRouter } from "./routes/items.js";
@@ -56,6 +57,22 @@ if (fs.existsSync(webDist)) {
 app.use(errorHandler);
 
 const port = Number(process.env.PORT ?? 3000);
+
+// The public demo has no login, so any visitor can change or delete its data.
+// Rebuilding the demo household on startup means the site repairs itself: the
+// free host sleeps after 15 minutes idle, so a mess never survives for long.
+// Off unless RESET_DEMO_DATA is set, otherwise every dev restart would wipe
+// the local database.
+if (process.env.RESET_DEMO_DATA === "true") {
+  try {
+    const name = await seedDemoData();
+    console.log(`Reset demo data to "${name}".`);
+  } catch (err) {
+    // A failed reset must not stop the server from serving.
+    console.error("Could not reset demo data:", err);
+  }
+}
+
 app.listen(port, () => {
   console.log(`WG Buddy API listening on http://localhost:${port}`);
 });
