@@ -14,10 +14,12 @@
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:migrate": "npm run migrate --workspace=apps/api",
+    "db:deploy": "npm run migrate:deploy --workspace=apps/api",
     "db:seed": "npm run seed --workspace=apps/api",
     "db:studio": "npm run studio --workspace=apps/api",
     "setup": "npm install && npm run db:up && npm run db:migrate && npm run db:seed",
     "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
+    "start": "npm run start --workspace=apps/api",
     "typecheck": "npm run typecheck --workspace=apps/api && npm run typecheck --workspace=apps/web"
   },
   "devDependencies": {
